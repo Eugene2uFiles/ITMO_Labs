@@ -25,6 +25,8 @@ def flag():
 #flag()
 
 
+
+
 #num2
 def pattern():
     # графики функций |y|**0.5 <= x <= (|y|+1)**0.5 и const-(|y|+1)**0.5 <= x <= const-|y|**0.5 при x<=0
@@ -58,6 +60,8 @@ def pattern():
     draw()
 #pattern()
 
+
+
 #num3
 def function(xin,yin): #задаем размеры координатной сетки (любые разумные) 
     x0=xin*2 #для симетрии
@@ -87,13 +91,41 @@ def function(xin,yin): #задаем размеры координатной с�
     for cord_x in range(x0):
         grid[int(y0//2)][cord_x]=" "*(lasty-len(str(cord_x-x0//2)))+str(cord_x-x0//2)
         
+
+    
     grid[-1][-1]=" " 
 
     for i in grid: #выводим
         print(''.join(i))
-    
-        
-    
-function(10,10) 
+#function(10,10) 
 
+
+#num4
+def chart():
+    f=[float(i) for i in open("sequence.txt")]
+
+
+    chet_num=[]
+    nechet_num=[]
+    for i in range(0,len(f)-1,2):
+        chet_num.append(abs(f[i]))
+        nechet_num.append(abs(f[i+1]))
+
+    mod_chet=sum(chet_num)/len(chet_num)
+    mod_nechet=sum(nechet_num)/len(nechet_num)
+
+
+
+    Reset ='\u001b[0m'
+    def draw_line(x,lenght=0,color=220,word=''): 
+        line = ' ' * lenght
+        ln=f'\x1b[48;5;{color}m{line}{Reset}'
+
+        if lenght!=0: 
+            print(f'{word} - {ln} {x}%')
+
+    draw_line(round((mod_chet/(mod_chet+mod_nechet)*100),3),int(mod_chet*10),220,"Четные позиции  ")
+    print("")
+    draw_line(round((mod_nechet/(mod_chet+mod_nechet)*100),3),int(mod_nechet*10),1,"Нечетные позиции")
+#chart()
 
