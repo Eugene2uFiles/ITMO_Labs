@@ -74,6 +74,22 @@ def num4():
     
 #num4()
 
+def num4_var2():
+    from xml.dom import minidom
+
+    with open('currency.xml', 'r', encoding='cp1251') as f:
+        content = f.read()
+    dom = minidom.parseString(content.encode('cp1251'))
+
+    valutes = dom.getElementsByTagName('Valute')
+
+    for valute in valutes:
+        char_code = valute.getElementsByTagName('CharCode')[0].firstChild.nodeValue
+        value = valute.getElementsByTagName('Value')[0].firstChild.nodeValue
+        print(f"Code: {char_code}, Value: {value}")
+
+#num4_var2()
+
 def additional_num1():
     with open('books-en.csv', 'r') as csvfile:
         tabel=reader(csvfile, delimiter=';')
@@ -82,7 +98,8 @@ def additional_num1():
             if row[-3] not in Publisher and row[-3]!="Publisher":
                 Publisher.append(row[-3])
         print(len(Publisher),Publisher)
-additional_num1()
+
+#additional_num1()
 
 def additional_num2():
 
