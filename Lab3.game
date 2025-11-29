@@ -1,0 +1,125 @@
+import tkinter as tk
+from tkinter import messagebox
+import random as rnd
+
+
+window = tk.Tk()
+window.title("Chto_exe")
+window.geometry('500x500')
+window.resizable(0,0)
+
+
+
+bg_image=tk.PhotoImage(file='VS1.png')
+bg_label=tk.Label(window,image=bg_image)
+bg_label.place(x=0,y=0,relheight=1,relwidth=1)
+
+
+def word_choose():
+    with open('words.txt', 'r') as f_words:
+        words=[i for i in f_words]
+    return rnd.choice(words)[:5]
+
+
+
+def exit():
+    window.destroy()
+
+def guess():
+    global word_to_show
+    global User_letters
+    global word_to_guess
+    global i
+    letter= imput_1.get()
+    
+    if len(letter)!=1 or letter.isalpha() == False:
+        tk.Message.showwarning('Неверный ввод', 'Введите одну букву')
+        return 0
+    letter.upper()
+    imput_1.delete(-1)
+    User_letters += f'{letter} '
+    text_label2.configure(text=f'Использованно впустую: {User_letters}')
+
+    if letter in word_to_guess:
+        word_buf=word_to_show
+        word_to_show=''
+        for i in range(5):
+            if word_to_guess[i]==letter:
+                word_to_show+=letter
+            else:
+                word_to_show+=word_buf[i]
+    text_label1.configure(text=f'{word_to_show}')
+
+    i-=1
+    text_label3.configure(text=f'Осталось ходов: {i}')
+
+    if  word_to_guess == word_to_show:
+        tk.messagebox.showinfo('Победа')
+    elif i==0 and word_to_guess != word_to_show:
+        tk.messagebox.showerror('Поражение')
+        exit()
+        
+    
+
+
+
+word_to_guess=word_choose()
+print(word_to_guess)
+word_to_show='-----'
+User_letters=''
+
+text_label1=tk.Label(window, 
+                    text='-----',
+                    font='Consolas 50',
+                    bg='red',
+                    fg='white')
+
+
+text_label1.place(x=0,y=0,relwidth=1)
+
+text_label2=tk.Label(window, 
+                    text='Введите букву:',
+                    font='Consolas 16')
+
+text_label2.place(relx=0.1,rely=0.33)
+
+
+imput_1=tk.Entry(window,
+                 font='Consolas 16',
+                 width=5)
+imput_1.place(relx=0.7,rely=0.33)
+
+i=10
+
+text_label3=tk.Label(window, 
+                    text=f'Осталось ходов: {i}',
+                    font='Consolas 16')
+
+text_label3.place(relx=0.1,rely=0.33)
+
+
+
+button1=tk.Button(window, 
+                text='Ok',
+                width=15,
+                command=guess)
+
+button1.place(relx=0.1,rely=0.8)
+
+button2=tk.Button(window, 
+                text='Exit',
+                width=15,
+                command=exit)
+
+button2.place(relx=0.7,rely=0.8)
+
+worduse=''
+
+text_label2=tk.Label(window, 
+                    text=f'Использованно впустую: {worduse}',
+                    font='Consolas 16')
+
+text_label2.place(relx=0.5,rely=0.5, anchor='center')
+
+
+window.mainloop()
