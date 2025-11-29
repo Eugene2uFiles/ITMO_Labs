@@ -1,0 +1,85 @@
+import tkinter as tk
+from string import ascii_uppercase
+
+alf="0123456789"+ascii_uppercase
+
+window = tk.Tk()
+window.title("Keygen.exe")
+window.geometry('400x600')
+window.resizable(0,0)
+
+bg_image=tk.PhotoImage(file='pole.png')
+bg_label=tk.Label(window,image=bg_image)
+bg_label.place(x=0,y=0,relheight=1,relwidth=1)
+
+def generator():
+    user_key= key_imput.get()
+    block2=[]
+    block3=[]
+
+    for i in user_key:
+        letter_index=alf.index(i)+3
+        if letter_index>=len(alf):
+            letter_index=len(alf)-letter_index
+        block2.append(alf[letter_index])
+    
+    
+    for i in user_key:
+        letter_index=alf.index(i)+5
+        if letter_index>=len(alf):
+            letter_index=len(alf)-letter_index
+        block3.append(alf[letter_index])
+    
+    output_bk=user_key+'-'+''.join(block2)+'-'+''.join(block3)
+    keygen_label.configure(text=output_bk)
+
+
+def exit():
+    window.destroy()
+
+main_label=tk.Label(window, 
+                    text='Кпитал шоу Поле чудес',
+                    font='Consolas 16')
+main_label.place(relx=0.5,rely=0.05, anchor='center')
+
+output_label=tk.Label(window, 
+                    text='Ключ активации:',
+                    font='Consolas 16')
+output_label.place(relx=0.5,rely=0.7, anchor='center')
+
+
+txt="X"*5+"-"+"X"*5+"-"+"X"*5
+keygen_label=tk.Label(window, 
+                    text=txt,
+                    font='Consolas 16')
+keygen_label.place(relx=0.5,rely=0.8, anchor='center')
+
+
+
+input_label=tk.Label(window, 
+                    text='Введите ключ продукта:',
+                    font='Consolas 10')
+input_label.place(relx=0.2,rely=0.1)
+
+key_imput=tk.Entry(window,
+                font='Consolas 10',
+                width=5)
+key_imput.place(relx=0.6,rely=0.1)
+
+button1=tk.Button(window, 
+                text='Генерировать ключ активации',
+                width=30,
+                command=generator)
+button1.place(relx=0.5,rely=0.2, anchor='center')
+
+exit_button=tk.Button(window, 
+                text='Выход',
+                width=15,
+                command=exit)
+exit_button.place(relx=0.5,rely=0.9, anchor='center')
+
+
+
+generator()
+
+window.mainloop()
