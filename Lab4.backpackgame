@@ -1,0 +1,78 @@
+f=open('backpak_game.csv','r')
+
+capacity=7
+capacity_backup=7
+points=0
+start_points=20
+backpack=[]
+
+mod_tabl={i.split(';')[1]:[-1*int(i.split(';')[2][0]),int(i.split(';')[3]),int(i.split(';')[3])/int(i.split(';')[2][0])] for i in f}
+
+sorted_items = dict(sorted(mod_tabl.items(), key=lambda item: (item[-1][-1],item[-1][0])))
+
+for i in sorted_items:
+    sorted_items[i][0]=-1*sorted_items[i][0]
+
+backpack.append('i')
+points=points+int(mod_tabl['i'][1])
+sorted_items.pop('i')
+capacity-=1
+
+
+
+keys=[i for i in sorted_items]
+while capacity>0:
+ 
+    '''
+    '''
+    if sorted_items[keys[-1]][0]>capacity and capacity>0:
+        backpack_backup=[i for i in backpack]
+        difference=sorted_items[keys[-1]][0]-capacity
+        
+        for i in range(difference):
+            backpack_backup.pop(-2)
+            backpack_backup.append(keys[-1])
+            keys.pop(-1)
+
+        sumbb=0
+        sumb=0
+        weight_bb=0
+
+        for bb in backpack_backup:
+            sumbb+=mod_tabl[bb][1]
+            weight_bb+=mod_tabl[bb][0]
+
+        for b in backpack:
+            sumb+=mod_tabl[b][1]
+        #print(sumb,backpack)
+        #print(sumbb,backpack_backup)
+        if sumbb>sumb and weight_bb<=capacity_backup:
+            #print(weight_bb)
+            backpack=backpack_backup
+            points=sumbb
+            capacity=0
+        else:
+            break
+    else:
+        backpack.append(keys[-1])
+        capacity-=sorted_items[keys[-1]][0]
+        points+=sorted_items[keys[-1]][1]
+        sorted_items.pop(keys[-1])
+        keys.pop(-1)
+        
+    
+#print(backpack)
+
+otv=[]
+for item in backpack:
+    weight=mod_tabl[item][0]
+    for i in range(weight):
+        otv.append(item)
+
+#print([mod_tabl[i][1] for i in keys],keys,sum([mod_tabl[i][1] for i in keys])) 
+#print(points,start_points,sum([mod_tabl[i][1] for i in keys]),keys)
+if capacity_backup==7: print("Общая сумма:", points+start_points-sum([mod_tabl[i][1] for i in keys]),"| Очки в рюкзаке:", points+start_points,"| Очки невзятых предметов:",sum([mod_tabl[i][1] for i in keys]),"| Содержимое рюкзака:", otv)
+if points+start_points-sum([mod_tabl[i][1] for i in keys])>=0:
+    for slot in range(0,len(otv),2):
+        print(otv[slot]+' '+otv[slot+1])
+    print('points:', points+start_points-sum([mod_tabl[i][1] for i in keys]))
