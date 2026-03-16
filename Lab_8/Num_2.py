@@ -1,5 +1,4 @@
 import cv2
-import numpy as np
 
 min_area = 100        
 max_area = 6000      
