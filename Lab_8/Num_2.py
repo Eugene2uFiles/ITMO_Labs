@@ -6,8 +6,6 @@ min_ar = 0.5
 max_ar = 2.0 
 indent = 70
 
-overlay = cv2.imread('fly64.png')
-
 
 def video():
     cap = cv2.VideoCapture(0)
@@ -52,8 +50,6 @@ def video():
                             cv2.circle(frame, (cx, cy), 8, (0, 255, 0), -1)
                             cv2.putText(frame, f"Center: {cx},{cy}", (cx - 40, cy - 15), 
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-                        
                         break  
 
         cv2.imshow('cam', frame)
