@@ -63,15 +63,8 @@ def video():
                     if min_ar < ar < max_ar:
                         cx = x + w // 2
                         cy = y + h // 2
-
                       
-                        if cx < indent and cy < indent:
-                            color = (255, 0, 0)  
-                        elif x_size - cx < indent and y_size - cy < indent:
-                            color = (0, 0, 255) 
-                        else:
-                            color = (0, 255, 0)  
-                            
+                        color = (0, 255, 0)  
                         cv2.circle(frame, (cx, cy), 8, color, -1)
                         cv2.putText(frame, f"Center: {cx},{cy}", (cx - 40, cy - 25), 
                                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
