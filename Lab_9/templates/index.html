@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>НЕМ-Нение</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-image: url("{{ url_for('static', filename='photo.jpg') }}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        
+        /* фон заголовка */
+        .container1 {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            min-height: 140px;
+            padding: 10px 20px;
+            background-color: rgb(248, 215, 215);
+            color: #352f2f;
+            z-index: 1000;
+            box-sizing: border-box;
+            
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* линия разделения */
+        .header-title {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            border-bottom: 2px solid #352f2f;
+            padding-bottom: 10px;
+        }
+
+        /* формат заголовка */
+        .page-title {
+            margin: 0;
+            font-size: 36px;
+            font-weight: bold;
+            font-family: Georgia, serif;
+            color: #352f2f;
+            letter-spacing: 3px;
+        }
+
+        /* формат слогана */
+        .page-slogan {
+            margin: 5px 0 0 0;
+            font-size: 18px;
+            font-style: italic;
+            color: #555;
+        }
+
+        /* расположение в ряд контейнеров */
+        .header-contacts {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 200px;
+        }
+
+        
+        /* форматы отступов текста под шапкой */
+        .text-block {
+            flex: 0 0 auto;
+            text-align: center;
+        }
+
+        .text-block h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #352f2f;
+        }
+
+        .text-block p {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            color: #352f2f;
+        }
+        
+        /* фон под отзывы */
+        .container2 {
+            max-width: 1400px;
+            margin-top: 140px;
+            min-height: calc(100vh - 140px);
+            margin: 140px auto 20px;
+            padding: 40px;
+            background-color: rgba(0, 0, 0, 0.95);
+            color: #fff;
+            border: 2px solid #f9d0d0;
+            border-radius: 10px;
+            box-sizing: border-box;
+        }
+
+        /* Подшапочный заголовок */
+        .container2 h1 {
+            color: #f9d0d0;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        /* контейнер для ввода отзывов */
+        .review-form {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 10px;
+            border: 1px solid #f9d0d0;
+            margin-bottom: 40px;
+        }
+
+        /* заголовок контейнера ввода отзывов */
+        .review-form h2 {
+            color: #f9d0d0;
+            margin-top: 0;
+            text-align: center;
+        }
+        
+        /* отступы ввода отзывов  */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        /* формат текста ввода отзывов */
+        .form-group label {
+            display: block;
+            color: #f9d0d0;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        /* формат текста ввода отзывов */
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #f9d0d0;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #333;
+            font-size: 16px;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        /* формат окон инпута имени */
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #ff9999;
+            background-color: #fff;
+        }
+
+        /* формат окон инпута отзыва */
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* звезды в ряд */
+        .rating {
+            display: flex;
+            flex-direction: row-reverse;
+            justify-content: center;
+            gap: 5px;
+        }   
+
+        /* скрытие полей ввода оценок */
+        .rating input {
+            display: none;
+        }
+
+        /* формат до ввода оценки */
+        .rating label {
+            font-size: 30px;
+            color: #555;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        /* формат после ввода оценки */
+        .rating label:hover,
+        .rating label:hover ~ label,
+        .rating input:checked ~ label {
+            color: #ffd700;
+        }
+
+        /* кнопка отправки отзыва до нажатия */
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            background-color: #f9d0d0;
+            color: #352f2f;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        /* кнопка отправки отзыва после нажатия */
+        .submit-btn:hover {
+            background-color: #ff9999;
+        }
+
+        /* отступ для отзывов */
+        .reviews-list {
+            margin-top: 40px;
+        }
+
+        /* формат заголовка отзывов */
+        .reviews-list h2 {
+            color: #f9d0d0;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f9d0d0;
+            padding-bottom: 10px;
+        }
+
+        /* формат ячейки отзыва */
+        .review-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #f9d0d0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 0, 0, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .reviewer-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #f9d0d0;
+        }
+
+        .review-date {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .review-stars {
+            color: #ffd700;
+            font-size: 20px;
+        }
+
+        .review-text {
+            color: #fff;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .no-reviews {
+            text-align: center;
+            color: #999;
+            font-style: italic;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container1">
+        <div class="header-title">
+            <h1 class="page-title">НЕМ-Нение</h1>
+            <p class="page-slogan">Лучший отзыв - это молчание</p>
+        </div>
+
+        <div class="header-contacts">
+            <div class="text-block">
+                <h2>НЕ ЗВОНИТЕ НАМ</h2>
+                <p>8 800 555-35-35</p>
+            </div>
+            
+            <div class="text-block">
+                <h2>Email / Почта</h2>
+                <p>Только почтой России</p>
+            </div>
+            
+            <div class="text-block">
+                <h2>Адрес</h2>
+                <p>г. Санкт-Петербург, Кронверский 49</p>
+            </div>
+            
+            <div class="text-block">
+                <h2>Режим работы</h2>
+                <p>Вс 2:00-9:00</p>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container2">
+        <h1>Мукулатура</h1>
+
+        <div class="review-form">
+            <h2>Оставить отзыв</h2>
+            <form action="/add_review" method="POST">
+                <div class="form-group">
+                    <label for="name">Какое погоняло?:</label>
+                    <input type="text" id="name" name="name" placeholder="Введите уже что-нибуть" required>
+                </div>
+
+                <div class="form-group">
+                    <label>О обже да всем нас...:</label>
+                    <div class="rating">
+                        <input type="radio" id="star5" name="rating" value="5" required>
+                        <label for="star5">★</label>
+                        <input type="radio" id="star4" name="rating" value="5">
+                        <label for="star4">★</label>
+                        <input type="radio" id="star3" name="rating" value="3">
+                        <label for="star3">★</label>
+                        <input type="radio" id="star2" name="rating" value="2">
+                        <label for="star2">★</label>
+                        <input type="radio" id="star1" name="rating" value="1">
+                        <label for="star1">★</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="review">Ваш кусок текста:</label>
+                    <textarea id="review" name="review" placeholder="Напишите уже что-нибуть" required></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn">Отправить отзыв</button>
+            </form>
+        </div>
+
+        <div class="reviews-list">
+            <h2>Отзывы бедолаг ({{ reviews|length }})</h2>
+            
+            {% if reviews %}
+                {% for review in reviews %}
+                <div class="review-card">
+                    <div class="review-header">
+                        <span class="reviewer-name">👤 {{ review.name }}</span>
+                        <span class="review-date">{{ review.date }}</span>
+                    </div>
+                    <div class="review-stars">
+                        {% for i in range(review.rating) %}★{% endfor %}
+                        {% for i in range(5 - review.rating) %}☆{% endfor %}
+                    </div>
+                    <p class="review-text">{{ review.text }}</p>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-reviews">
+                    <p>Лох!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</body>
+</html>
