@@ -1,0 +1,27 @@
+[project]
+name = "tea_mixer"
+version = "1.0.0"
+description = "Конструктор чайной смеси"
+dependencies = [
+    "flet==0.85.3",
+]
+
+[tool.flet]
+product = "Конструктор чайной смеси"
+org = "com.tea.mixer"
+company = "Tea Mixer"
+build_number = 1
+
+[tool.flet.app]
+module = "main"
+
+[tool.flet.android]
+adaptive_icon_background = "#F2F8E4"
+split_per_abi = true
+
+[tool.flet.build]
+exclude = [
+    "__pycache__/**",
+    ".vscode/**",
+    "*.avif",
+]
