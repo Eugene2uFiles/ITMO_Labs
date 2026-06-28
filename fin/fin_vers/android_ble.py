@@ -1,0 +1,177 @@
+"""BLE bridge for Android without Python-to-Java callbacks."""
+
+from __future__ import annotations
+
+import logging
+import re
+import time
+from dataclasses import dataclass
+
+logger = logging.getLogger("tea_mixer.android_ble")
+_IMPORT_ERROR: Exception | None = None
+
+try:
+    from jnius import autoclass
+except ImportError as exc:
+    autoclass = None  # type: ignore[assignment]
+    _IMPORT_ERROR = exc
+
+JAVA_BRIDGE = "com.tea.mixer.ble.BleBridge"
+MAC_RE = re.compile(r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")
+STATE_IDLE = 0
+STATE_CONNECTING = 1
+STATE_DISCOVERING = 2
+STATE_CONNECTED = 3
+STATE_FAILED = 4
+
+
+class BleError(Exception):
+    pass
+
+
+@dataclass(frozen=True)
+class BleDevice:
+    address: str
+    name: str
+
+
+def available() -> bool:
+    return _IMPORT_ERROR is None and autoclass is not None
+
+
+def error_text() -> str:
+    if _IMPORT_ERROR is None:
+        return ""
+    return f"BLE недоступен: {_IMPORT_ERROR}"
+
+
+def _bridge():
+    if not available():
+        raise BleError(error_text() or "pyjnius не установлен")
+    try:
+        return autoclass(JAVA_BRIDGE)
+    except Exception as exc:
+        logger.exception("Java BLE bridge is unavailable")
+        raise BleError("Java BLE-мост не найден в APK") from exc
+
+
+def normalize_mac(value: str) -> str:
+    cleaned = value.strip().upper()
+    if not MAC_RE.match(cleaned):
+        raise BleError("Неверный MAC-адрес (формат AA:BB:CC:DD:EE:FF)")
+    return cleaned
+
+
+def ensure_permissions(timeout: float = 15.0) -> None:
+    bridge = _bridge()
+    try:
+        if bridge.hasPermissions():
+            logger.info("Android Bluetooth permissions already granted")
+            return
+        logger.info("Requesting Android Bluetooth permissions in Java")
+        bridge.requestPermissions()
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if bridge.hasPermissions():
+                logger.info("Android Bluetooth permissions granted")
+                return
+            time.sleep(0.25)
+    except Exception as exc:
+        logger.exception("Android permission request failed")
+        raise BleError(f"Ошибка разрешений Bluetooth: {exc}") from exc
+    raise BleError("Разрешите доступ к устройствам поблизости")
+
+
+def _ensure_adapter() -> None:
+    try:
+        if not _bridge().isBluetoothEnabled():
+            raise BleError("Включите Bluetooth")
+    except BleError:
+        raise
+    except Exception as exc:
+        logger.exception("Bluetooth adapter check failed")
+        raise BleError(f"Bluetooth недоступен: {exc}") from exc
+
+
+def list_paired_devices() -> list[BleDevice]:
+    ensure_permissions()
+    _ensure_adapter()
+    try:
+        raw_devices = _bridge().pairedDevices()
+        devices = []
+        for raw in raw_devices:
+            text = str(raw)
+            address, separator, name = text.partition("\t")
+            if separator:
+                devices.append(BleDevice(address=address, name=name or address))
+        logger.info("Paired Bluetooth devices received from Java: %d", len(devices))
+        return sorted(devices, key=lambda device: device.name.lower())
+    except Exception as exc:
+        logger.exception("Reading paired devices failed")
+        raise BleError(f"Не удалось прочитать устройства: {exc}") from exc
+
+
+class BleLink:
+    def __init__(self) -> None:
+        self.address: str | None = None
+        self.name: str | None = None
+
+    @property
+    def connected(self) -> bool:
+        try:
+            return _bridge().connectionState() == STATE_CONNECTED
+        except Exception:
+            return False
+
+    def connect(self, address: str, name: str | None = None, timeout: float = 20.0) -> None:
+        self.disconnect()
+        address = normalize_mac(address)
+        ensure_permissions()
+        _ensure_adapter()
+        bridge = _bridge()
+        logger.info("Starting Java GATT connection: %s", address)
+        try:
+            bridge.connect(address)
+            deadline = time.monotonic() + timeout
+            while time.monotonic() < deadline:
+                state = int(bridge.connectionState())
+                if state == STATE_CONNECTED:
+                    self.address = address
+                    self.name = name or address
+                    logger.info("Java GATT connection ready: %s", address)
+                    return
+                if state == STATE_FAILED:
+                    raise BleError(str(bridge.lastError()) or "Ошибка подключения")
+                time.sleep(0.1)
+        except BleError:
+            bridge.disconnect()
+            raise
+        except Exception as exc:
+            logger.exception("Java GATT connection call failed")
+            bridge.disconnect()
+            raise BleError(f"Ошибка подключения: {exc}") from exc
+        bridge.disconnect()
+        raise BleError("Таймаут подключения")
+
+    def write(self, data: bytes) -> None:
+        if not self.connected:
+            raise BleError("Нет подключения")
+        try:
+            text = data.decode("utf-8")
+            if not _bridge().writeUtf8(text):
+                detail = str(_bridge().lastError())
+                raise BleError(detail or "Не удалось отправить данные")
+            time.sleep(0.15)
+        except BleError:
+            raise
+        except Exception as exc:
+            logger.exception("Java GATT write failed")
+            raise BleError(f"Ошибка отправки: {exc}") from exc
+
+    def disconnect(self) -> None:
+        try:
+            _bridge().disconnect()
+        except Exception:
+            logger.exception("Java GATT disconnect failed")
+        self.address = None
+        self.name = None
