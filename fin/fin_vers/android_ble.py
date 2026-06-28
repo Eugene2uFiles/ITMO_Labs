@@ -1,4 +1,4 @@
-"""BLE bridge for Android without Python-to-Java callbacks."""
+"""Связь с BLE на Android через Java-мост."""
 
 from __future__ import annotations
 
@@ -10,12 +10,14 @@ from dataclasses import dataclass
 logger = logging.getLogger("tea_mixer.android_ble")
 _IMPORT_ERROR: Exception | None = None
 
+# Сначала подключаю pyjnius, чтобы Python мог обращаться к Java.
 try:
     from jnius import autoclass
 except ImportError as exc:
     autoclass = None  # type: ignore[assignment]
     _IMPORT_ERROR = exc
 
+# Имя Java-класса и состояния Bluetooth-подключения.
 JAVA_BRIDGE = "com.tea.mixer.ble.BleBridge"
 MAC_RE = re.compile(r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$")
 STATE_IDLE = 0
@@ -29,12 +31,14 @@ class BleError(Exception):
     pass
 
 
+# Тут хранится одно найденное BLE-устройство.
 @dataclass(frozen=True)
 class BleDevice:
     address: str
     name: str
 
 
+# Проверяю, доступна ли Android BLE-часть.
 def available() -> bool:
     return _IMPORT_ERROR is None and autoclass is not None
 
@@ -45,6 +49,7 @@ def error_text() -> str:
     return f"BLE недоступен: {_IMPORT_ERROR}"
 
 
+# Получаю Java-класс, который реально работает с Bluetooth.
 def _bridge():
     if not available():
         raise BleError(error_text() or "pyjnius не установлен")
@@ -55,6 +60,7 @@ def _bridge():
         raise BleError("Java BLE-мост не найден в APK") from exc
 
 
+# Проверяю MAC-адрес и привожу его к одному виду.
 def normalize_mac(value: str) -> str:
     cleaned = value.strip().upper()
     if not MAC_RE.match(cleaned):
@@ -62,6 +68,7 @@ def normalize_mac(value: str) -> str:
     return cleaned
 
 
+# Перед работой с Bluetooth запрашиваю разрешения Android.
 def ensure_permissions(timeout: float = 15.0) -> None:
     bridge = _bridge()
     try:
@@ -82,6 +89,7 @@ def ensure_permissions(timeout: float = 15.0) -> None:
     raise BleError("Разрешите доступ к устройствам поблизости")
 
 
+# Проверяю, включён ли Bluetooth на телефоне.
 def _ensure_adapter() -> None:
     try:
         if not _bridge().isBluetoothEnabled():
@@ -93,6 +101,7 @@ def _ensure_adapter() -> None:
         raise BleError(f"Bluetooth недоступен: {exc}") from exc
 
 
+# Получаю список уже сопряжённых устройств.
 def list_paired_devices() -> list[BleDevice]:
     ensure_permissions()
     _ensure_adapter()
@@ -111,6 +120,7 @@ def list_paired_devices() -> list[BleDevice]:
         raise BleError(f"Не удалось прочитать устройства: {exc}") from exc
 
 
+# Один объект этого класса отвечает за одно BLE-подключение.
 class BleLink:
     def __init__(self) -> None:
         self.address: str | None = None
@@ -118,12 +128,14 @@ class BleLink:
 
     @property
     def connected(self) -> bool:
+        # Состояние подключения спрашиваю у Java.
         try:
             return _bridge().connectionState() == STATE_CONNECTED
         except Exception:
             return False
 
     def connect(self, address: str, name: str | None = None, timeout: float = 20.0) -> None:
+        # Сначала закрываю старое соединение.
         self.disconnect()
         address = normalize_mac(address)
         ensure_permissions()
@@ -134,6 +146,7 @@ class BleLink:
             bridge.connect(address)
             deadline = time.monotonic() + timeout
             while time.monotonic() < deadline:
+                # Жду, пока Java закончит подключение.
                 state = int(bridge.connectionState())
                 if state == STATE_CONNECTED:
                     self.address = address
@@ -154,6 +167,7 @@ class BleLink:
         raise BleError("Таймаут подключения")
 
     def write(self, data: bytes) -> None:
+        # Отправляю данные только если соединение активно.
         if not self.connected:
             raise BleError("Нет подключения")
         try:
@@ -169,6 +183,7 @@ class BleLink:
             raise BleError(f"Ошибка отправки: {exc}") from exc
 
     def disconnect(self) -> None:
+        # Закрываю соединение и очищаю данные.
         try:
             _bridge().disconnect()
         except Exception:

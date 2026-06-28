@@ -1,16 +1,18 @@
-"""Bluetooth для Arduino: список сопряжённых устройств + прямое BLE-подключение."""
+"""Работа с Bluetooth-модулем Arduino."""
 
 from __future__ import annotations
 
-import os
 import logging
+import os
 from dataclasses import dataclass
 
+# Сначала пробую подключить Android BLE-часть.
 try:
     import android_ble
 except ImportError:
     android_ble = None  # type: ignore[assignment]
 
+# Имя модуля, который приложение ищет в списке устройств.
 DEFAULT_DEVICE_NAME = "ION"
 logger = logging.getLogger("tea_mixer.bluetooth_service")
 
@@ -19,6 +21,7 @@ class BluetoothConnectionError(Exception):
     pass
 
 
+# Тут хранится устройство из списка Bluetooth.
 @dataclass(frozen=True)
 class BluetoothDevice:
     address: str
@@ -26,10 +29,12 @@ class BluetoothDevice:
 
     @property
     def label(self) -> str:
-        marker = " ★" if DEFAULT_DEVICE_NAME.lower() in self.name.lower() else ""
+        # Для модуля ION добавляю отметку.
+        marker = " ION" if DEFAULT_DEVICE_NAME.lower() in self.name.lower() else ""
         return f"{self.name} ({self.address}){marker}"
 
 
+# Формирую строку, которую будет читать Arduino.
 def _mix_line(tea_grams: list[float], sugar_grams: float) -> str:
     return (
         "MIX:"
@@ -38,20 +43,24 @@ def _mix_line(tea_grams: list[float], sugar_grams: float) -> str:
     )
 
 
+# Основной класс для Bluetooth в приложении.
 class ArduinoBluetooth:
     def __init__(self) -> None:
         self._link: android_ble.BleLink | None = None
 
     @staticmethod
     def is_android() -> bool:
+        # BLE работает только внутри Android APK.
         return os.getenv("FLET_PLATFORM") == "android"
 
     @property
     def is_connected(self) -> bool:
+        # Проверяю, есть ли активное подключение.
         return self._link is not None and self._link.connected
 
     @property
     def port(self) -> str | None:
+        # Возвращаю название подключённого устройства.
         if self._link is None or not self._link.connected:
             return None
         if self._link.name:
@@ -59,6 +68,7 @@ class ArduinoBluetooth:
         return self._link.address
 
     def _require_android(self) -> None:
+        # Перед BLE-операциями проверяю платформу.
         if not self.is_android():
             raise BluetoothConnectionError("Bluetooth работает только на Android")
         if android_ble is None or not android_ble.available():
@@ -66,6 +76,7 @@ class ArduinoBluetooth:
             raise BluetoothConnectionError(detail or "Bluetooth недоступен")
 
     def request_permissions(self) -> None:
+        # Запрашиваю разрешения Bluetooth.
         logger.info("Requesting Bluetooth permissions")
         self._require_android()
         try:
@@ -75,6 +86,7 @@ class ArduinoBluetooth:
             raise BluetoothConnectionError(str(exc)) from exc
 
     def list_devices(self) -> list[BluetoothDevice]:
+        # Получаю список сопряжённых устройств.
         logger.info("Listing paired Bluetooth devices")
         self._require_android()
         try:
@@ -89,6 +101,7 @@ class ArduinoBluetooth:
 
     @staticmethod
     def pick_default(devices: list[BluetoothDevice]) -> str | None:
+        # По умолчанию выбираю ION, если он есть.
         if not devices:
             return None
         for device in devices:
@@ -97,6 +110,7 @@ class ArduinoBluetooth:
         return devices[0].address
 
     def connect(self, address: str, name: str | None = None) -> None:
+        # Подключаюсь к выбранному модулю.
         logger.info("Connecting Bluetooth service: address=%s, name=%s", address, name)
         self._require_android()
         if self._link is not None:
@@ -118,12 +132,14 @@ class ArduinoBluetooth:
         )
 
     def disconnect(self) -> None:
+        # Отключаюсь от модуля.
         logger.info("Disconnecting Bluetooth service")
         if self._link is not None:
             self._link.disconnect()
             self._link = None
 
     def send_line(self, line: str) -> None:
+        # Отправляю строку только после подключения.
         if not self.is_connected or self._link is None:
             raise BluetoothConnectionError("Сначала подключитесь к модулю")
         payload = line.rstrip("\r\n").encode("utf-8") + b"\n"
@@ -135,6 +151,7 @@ class ArduinoBluetooth:
             raise BluetoothConnectionError(str(exc)) from exc
 
     def send_mix(self, tea_grams: list[float], sugar_grams: float) -> str:
+        # Отправляю готовую смесь из четырёх чаёв.
         if len(tea_grams) != 4:
             raise BluetoothConnectionError("Нужно 4 значения чая")
         line = _mix_line(tea_grams, sugar_grams)
@@ -142,4 +159,5 @@ class ArduinoBluetooth:
         return line.strip()
 
     def send_test(self) -> str:
+        # Тестовая строка для проверки связи.
         return self.send_mix([1.0, 1.0, 1.0, 1.0], 0.0)

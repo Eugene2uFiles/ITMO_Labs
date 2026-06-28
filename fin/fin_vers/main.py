@@ -3,6 +3,8 @@ import logging
 from pathlib import Path
 
 from app_logging import configure_logging, get_log_path
+# Из bluetooth_service беру готовый класс для работы с BLE.
+# Уже внутри него вызывается android_ble и Java-мост.
 from bluetooth_service import (
     ArduinoBluetooth,
     BluetoothConnectionError,
@@ -188,6 +190,7 @@ def _run_app(page: ft.Page):
     teas = []
     last_grams: list[float] = []
     last_sugar: float | None = None
+    # Создаю объект для связи с Arduino по Bluetooth.
     arduino = ArduinoBluetooth()
     db = TeaDatabase()
     saved_profile = db.get_last_profile()
@@ -281,6 +284,7 @@ def _run_app(page: ft.Page):
 
         user_name = name_input.value.strip()
         db.save_user_name(user_name)
+        # Bluetooth-экран нужен только на Android.
         if arduino.is_android():
             show_bluetooth_screen()
         else:
@@ -308,6 +312,7 @@ def _run_app(page: ft.Page):
 
     def show_bluetooth_screen():
         logger.info("Opening Bluetooth screen; log_file=%s", get_log_path())
+        # Тут выбирается уже сопряжённое Bluetooth-устройство.
         device_dropdown = ft.Dropdown(
             label="Сопряжённые Bluetooth-устройства",
             options=[],
@@ -336,6 +341,7 @@ def _run_app(page: ft.Page):
             busy["value"] = on
             refresh_btn.disabled = on
             connect_btn.disabled = on
+            # Кнопка проверки доступна только после подключения.
             test_btn.disabled = on or not arduino.is_connected
             page.update()
 
@@ -356,11 +362,12 @@ def _run_app(page: ft.Page):
             device_dropdown.options = [
                 ft.dropdown.Option(key=d.address, text=d.label) for d in devices
             ]
+            # Автоматически выбираю ION, если он есть в списке.
             device_dropdown.value = ArduinoBluetooth.pick_default(devices)
             if devices:
                 set_status(
-                    f"Выберите {DEFAULT_DEVICE_NAME} и нажмите «Подключиться».\n"
-                    "Если модуля нет — сопрягите его в настройках Bluetooth телефона.",
+                    f"Выберите {DEFAULT_DEVICE_NAME} и нажмите \"Подключиться\".\n"
+                    "Если модуля нет - сопрягите его в настройках Bluetooth телефона.",
                     GREEN_DARK,
                 )
             else:
@@ -380,6 +387,7 @@ def _run_app(page: ft.Page):
             def worker():
                 try:
                     logger.info("Loading paired Bluetooth devices")
+                    # Через bluetooth_service получаю устройства из android_ble.
                     devices = arduino.list_devices()
                 except BluetoothConnectionError as exc:
                     logger.exception("Failed to load paired Bluetooth devices")
@@ -405,6 +413,7 @@ def _run_app(page: ft.Page):
             def worker():
                 try:
                     logger.info("Connecting to Bluetooth device: %s", address)
+                    # Подключаюсь к выбранному BLE-модулю.
                     arduino.connect(address, name=selected_name(address))
                 except BluetoothConnectionError as exc:
                     logger.exception("Bluetooth connection failed: %s", address)
@@ -432,6 +441,7 @@ def _run_app(page: ft.Page):
             def worker():
                 try:
                     logger.info("Sending Bluetooth test payload")
+                    # Отправляю тестовую строку на Arduino.
                     payload = arduino.send_test()
                 except BluetoothConnectionError as exc:
                     logger.exception("Bluetooth test failed")
@@ -453,6 +463,7 @@ def _run_app(page: ft.Page):
 
         def disconnect_click(e):
             logger.info("Disconnect requested")
+            # Закрываю текущее Bluetooth-подключение.
             arduino.disconnect()
             continue_btn.disabled = True
             test_btn.disabled = True
@@ -491,6 +502,7 @@ def _run_app(page: ft.Page):
             set_busy(True)
             set_status("Запрашиваю разрешения Bluetooth...", ft.Colors.ORANGE)
             try:
+                # Запрашиваю разрешения Android для Bluetooth.
                 arduino.request_permissions()
             except BluetoothConnectionError as exc:
                 logger.exception("Bluetooth permission initialization failed")
@@ -517,10 +529,10 @@ def _run_app(page: ft.Page):
             profile = db.get_profile(user_name)
             saved_teas = profile["teas"] if profile else ["", "", "", ""]
 
-        tea1 = ft.TextField(label="Название чая №1", value=saved_teas[0])
-        tea2 = ft.TextField(label="Название чая №2", value=saved_teas[1])
-        tea3 = ft.TextField(label="Название чая №3", value=saved_teas[2])
-        tea4 = ft.TextField(label="Название чая №4", value=saved_teas[3])
+        tea1 = ft.TextField(label="Название чая N1", value=saved_teas[0])
+        tea2 = ft.TextField(label="Название чая N2", value=saved_teas[1])
+        tea3 = ft.TextField(label="Название чая N3", value=saved_teas[2])
+        tea4 = ft.TextField(label="Название чая N4", value=saved_teas[3])
 
         def save_teas(e):
             nonlocal teas
@@ -546,6 +558,7 @@ def _run_app(page: ft.Page):
             tea3,
             tea4,
             primary_button("Продолжить", save_teas),
+            # На Android возвращаюсь к Bluetooth-экрану, чтобы не потерять связь.
             on_back=show_bluetooth_screen if arduino.is_android() else show_name_screen,
         )
 
@@ -657,6 +670,7 @@ def _run_app(page: ft.Page):
                 return
 
             try:
+                # Отправляю рассчитанную смесь на Arduino.
                 payload = arduino.send_mix(last_grams, round(sugar_slider.value, 1))
             except BluetoothConnectionError as exc:
                 send_status.value = str(exc)
@@ -690,6 +704,7 @@ def _run_app(page: ft.Page):
             primary_button(
                 "Отправить на Arduino",
                 send_to_arduino,
+                # Без подключения кнопку отправки выключаю.
                 disabled=not arduino.is_connected,
             ),
             send_status,

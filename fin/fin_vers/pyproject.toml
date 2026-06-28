@@ -30,5 +30,10 @@ dependencies = ["pyjnius"]
 exclude = [
     "__pycache__/**",
     ".vscode/**",
+    ".git/**",
+    ".agents/**",
+    ".codex/**",
+    "github-upload-tmp/**",
+    "build/**",
     "*.avif",
 ]
